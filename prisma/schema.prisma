@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Supplier {
+  id                         String            @id @default(cuid())
+  name                       String
+  cifNif                     String?           @unique
+  address                    String?
+  phoneNumber                String?
+  commercialName             String?
+  commercialPhoneNumber      String?
+  deliveryDays               String?
+  minPriceDelivery           Decimal?          @db.Decimal(10, 2)
+  sanitaryRegistrationNumber String?
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+
+  invoices                   Invoice[]
+  supplierProducts           SupplierProduct[]
+
+  @@index([cifNif])
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  enterpriseId   String
+  supplierId     String
+  type           String?
+  invoiceNumber  String?
+  imageUrl       String?
+  amount         Decimal       @db.Decimal(12, 2)
+  date           String
+  createdAt      DateTime      @default(now())
+
+  supplier       Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  invoiceLines   InvoiceLine[]
+
+  @@index([enterpriseId])
+  @@index([supplierId])
+  @@index([invoiceNumber])
+}
+
+model InvoiceLine {
+  id                 String           @id @default(cuid())
+  invoiceId          String
+  suppliersProductId String?
+  description        String?
+  quantity           Decimal          @db.Decimal(10, 3)
+  unitPrice          Decimal          @db.Decimal(12, 2)
+  price              Decimal?         @db.Decimal(12, 2)
+  tax                String?
+  createdAt          DateTime         @default(now())
+
+  invoice            Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  supplierProduct    SupplierProduct? @relation(fields: [suppliersProductId], references: [id])
+
+  @@index([invoiceId])
+  @@index([suppliersProductId])
+}
+
+model SupplierProduct {
+  id               String        @id @default(cuid())
+  productReference String?
+  masterProductId  String?
+  supplierId       String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  supplier         Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  invoiceLines     InvoiceLine[]
+
+  @@index([supplierId])
+  @@index([masterProductId])
+}
