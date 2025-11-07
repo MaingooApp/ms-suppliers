@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { RpcException, ClientProxy } from '@nestjs/microservices';
 
@@ -25,7 +25,7 @@ interface CreateInvoicePayload {
 }
 
 @Injectable()
-export class InvoicesService extends PrismaClient {
+export class InvoicesService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(InvoicesService.name);
 
   constructor(
@@ -33,6 +33,16 @@ export class InvoicesService extends PrismaClient {
     @Inject(NATS_SERVICE) private readonly client: ClientProxy
   ) {
     super();
+  }
+
+  async onModuleInit() {
+    await this.$connect();
+    this.logger.log('📊 Prisma connected for InvoicesService');
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+    this.logger.log('📊 Prisma disconnected for InvoicesService');
   }
 
   async createInvoice(payload: CreateInvoicePayload) {
