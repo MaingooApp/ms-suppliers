@@ -10,7 +10,7 @@ datasource db {
 model Supplier {
   id                         String            @id @default(cuid())
   name                       String
-  cifNif                     String?           @unique
+  cifNif                     String            @unique
   address                    String?
   phoneNumber                String?
   commercialName             String?

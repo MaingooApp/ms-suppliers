@@ -40,10 +40,10 @@ export class InvoicesService extends PrismaClient {
       let supplierId = payload.supplierId;
 
       // Si no viene supplierId pero sí el nombre del proveedor, crear/buscar
-      if (!supplierId && payload.supplierName) {
+      if (!supplierId && payload.supplierName && payload.supplierCifNif) {
         const supplier = await this.suppliersService.findOrCreateSupplier(
           payload.supplierName,
-          payload.supplierCifNif || null
+          payload.supplierCifNif
         );
         supplierId = supplier.id;
       }
@@ -51,7 +51,7 @@ export class InvoicesService extends PrismaClient {
       if (!supplierId) {
         throw new RpcException({
           status: 400,
-          message: 'supplierId or supplierName is required'
+          message: 'supplierId or (supplierName and supplierCifNif) is required'
         });
       }
 

@@ -46,7 +46,8 @@ export class DocumentsEventHandler {
       }
 
       if (!extraction.supplierTaxId) {
-        this.logger.warn(`⚠️  Missing supplier tax ID (CIF/NIF) - continuing anyway`);
+        this.logger.warn(`⚠️  Missing supplier tax ID (CIF/NIF), skipping invoice creation`);
+        return;
       }
 
       if (!extraction.totalAmount) {

@@ -44,16 +44,14 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
     }
   }
 
-  async findOrCreateSupplier(name: string, cifNif: string | null) {
+  async findOrCreateSupplier(name: string, cifNif: string) {
     try {
       let supplier;
 
-      // Buscar por CIF si existe
-      if (cifNif) {
-        supplier = await this.supplier.findUnique({
-          where: { cifNif }
-        });
-      }
+      // Buscar por CIF
+      supplier = await this.supplier.findUnique({
+        where: { cifNif }
+      });
 
       // Si no se encontró por CIF, buscar por nombre (case insensitive)
       if (!supplier) {
@@ -72,9 +70,7 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
         supplier = await this.supplier.create({
           data: { name, cifNif }
         });
-        this.logger.log(
-          `✅ Auto-created supplier: ${name}${cifNif ? ` (${cifNif})` : ' (sin CIF)'}`
-        );
+        this.logger.log(`✅ Auto-created supplier: ${name} (${cifNif})`);
       } else {
         this.logger.log(`📌 Found existing supplier: ${name}`);
       }
