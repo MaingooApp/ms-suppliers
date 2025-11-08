@@ -5,13 +5,17 @@ interface EnvVars {
   PORT?: number;
   NATS_SERVERS: string;
   DATABASE_URL: string;
+  AZURE_STORAGE_CONNECTION_STRING: string;
+  AZURE_DOCUMENTS_CONTAINER: string;
 }
 
 const envsSchema = joi
   .object<EnvVars>({
     PORT: joi.number().default(3003),
     NATS_SERVERS: joi.string().required(),
-    DATABASE_URL: joi.string().required()
+    DATABASE_URL: joi.string().required(),
+    AZURE_STORAGE_CONNECTION_STRING: joi.string().required(),
+    AZURE_DOCUMENTS_CONTAINER: joi.string().default('invoices')
   })
   .unknown(true);
 
@@ -24,5 +28,7 @@ if (error) {
 export const envs = {
   port: envVars.PORT!,
   natsServers: envVars.NATS_SERVERS.split(','),
-  databaseUrl: envVars.DATABASE_URL
+  databaseUrl: envVars.DATABASE_URL,
+  azureStorageConnectionString: envVars.AZURE_STORAGE_CONNECTION_STRING,
+  documentsContainerName: envVars.AZURE_DOCUMENTS_CONTAINER
 };

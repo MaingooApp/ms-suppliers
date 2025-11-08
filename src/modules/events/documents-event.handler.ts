@@ -7,6 +7,7 @@ import { DocumentsEvents, SuppliersEvents, NATS_SERVICE } from 'src/config';
 interface DocumentAnalyzedPayload {
   documentId: string;
   enterpriseId: string;
+  blobName: string;
   extraction: {
     supplierName?: string;
     supplierTaxId?: string;
@@ -38,7 +39,7 @@ export class DocumentsEventHandler {
     this.logger.log(`📥 Received documents.analyzed event: ${payload.documentId}`);
 
     try {
-      const { enterpriseId, extraction } = payload;
+      const { enterpriseId, blobName, extraction } = payload;
 
       if (!extraction.supplierName) {
         this.logger.warn(`⚠️  Missing supplier name, skipping invoice creation`);
@@ -55,12 +56,13 @@ export class DocumentsEventHandler {
         return;
       }
 
-      // Crear la factura automáticamente
+      // Crear la factura automáticamente con blobName
       const invoice = await this.invoicesService.createInvoice({
         enterpriseId,
         supplierName: extraction.supplierName,
         supplierCifNif: extraction.supplierTaxId,
         invoiceNumber: extraction.invoiceNumber,
+        blobName, // Guardar referencia al archivo en blob storage
         amount: extraction.totalAmount,
         date: extraction.issueDate || new Date().toISOString(),
         lines: extraction.lines?.map((line) => ({

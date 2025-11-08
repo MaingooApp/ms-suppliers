@@ -22,4 +22,22 @@ export class InvoicesController {
   listInvoices(@Payload() payload?: { enterpriseId?: string }) {
     return this.invoicesService.listInvoices(payload?.enterpriseId);
   }
+
+  @MessagePattern(SuppliersSubjects.getInvoiceDocumentUrl)
+  getInvoiceDocumentUrl(@Payload() payload: { invoiceId: string; expiresInHours?: number }) {
+    return this.invoicesService.getInvoiceDocumentUrl(
+      payload.invoiceId,
+      payload.expiresInHours || 24
+    );
+  }
+
+  @MessagePattern(SuppliersSubjects.getMultipleInvoiceDocumentUrls)
+  getMultipleInvoiceDocumentUrls(
+    @Payload() payload: { invoiceIds: string[]; expiresInHours?: number }
+  ) {
+    return this.invoicesService.getMultipleInvoiceDocumentUrls(
+      payload.invoiceIds,
+      payload.expiresInHours || 48
+    );
+  }
 }

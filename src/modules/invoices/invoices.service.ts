@@ -4,6 +4,7 @@ import { RpcException, ClientProxy } from '@nestjs/microservices';
 
 import { SuppliersService } from '../suppliers/suppliers.service';
 import { NATS_SERVICE, SuppliersEvents } from 'src/config';
+import { AzureBlobService } from './azure-blob.service';
 
 interface CreateInvoicePayload {
   enterpriseId: string;
@@ -11,10 +12,10 @@ interface CreateInvoicePayload {
   supplierName?: string;
   supplierCifNif?: string;
   invoiceNumber?: string;
+  blobName?: string;
   amount: number;
   date: string;
   type?: string;
-  imageUrl?: string;
   lines?: Array<{
     quantity: number;
     unitPrice: number;
@@ -30,7 +31,8 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
 
   constructor(
     private readonly suppliersService: SuppliersService,
-    @Inject(NATS_SERVICE) private readonly client: ClientProxy
+    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
+    private readonly azureBlobService: AzureBlobService
   ) {
     super();
   }
@@ -70,10 +72,10 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
           enterpriseId: payload.enterpriseId,
           supplierId,
           invoiceNumber: payload.invoiceNumber,
+          blobName: payload.blobName,
           amount: payload.amount,
           date: payload.date,
           type: payload.type,
-          imageUrl: payload.imageUrl,
           invoiceLines: payload.lines
             ? {
                 create: payload.lines.map((line) => ({
@@ -135,5 +137,72 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
       },
       orderBy: { createdAt: 'desc' }
     });
+  }
+
+  /**
+   * Obtiene la URL temporal del documento de la factura
+   */
+  async getInvoiceDocumentUrl(invoiceId: string, expiresInHours: number = 24) {
+    try {
+      const invoice = await this.invoice.findUnique({
+        where: { id: invoiceId },
+        select: { blobName: true }
+      });
+
+      if (!invoice) {
+        throw new RpcException({ status: 404, message: 'Invoice not found' });
+      }
+
+      if (!invoice.blobName) {
+        throw new RpcException({ status: 404, message: 'Invoice document not found' });
+      }
+
+      const url = await this.azureBlobService.getDocumentUrl(invoice.blobName, expiresInHours);
+
+      return {
+        url,
+        expiresIn: expiresInHours,
+        blobName: invoice.blobName
+      };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      this.logger.error(`Error getting invoice document URL for ${invoiceId}`, error);
+      throw new RpcException({ status: 500, message: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Obtiene URLs temporales para múltiples facturas (útil para exportación)
+   */
+  async getMultipleInvoiceDocumentUrls(invoiceIds: string[], expiresInHours: number = 48) {
+    try {
+      const invoices = await this.invoice.findMany({
+        where: { id: { in: invoiceIds } },
+        select: { id: true, blobName: true }
+      });
+
+      const blobNames = invoices.filter((inv) => inv.blobName).map((inv) => inv.blobName!);
+
+      if (blobNames.length === 0) {
+        return [];
+      }
+
+      const urlsMap = await this.azureBlobService.getMultipleDocumentUrls(
+        blobNames,
+        expiresInHours
+      );
+
+      return invoices
+        .filter((inv) => inv.blobName && urlsMap.has(inv.blobName))
+        .map((inv) => ({
+          invoiceId: inv.id,
+          blobName: inv.blobName!,
+          url: urlsMap.get(inv.blobName!)!,
+          expiresIn: expiresInHours
+        }));
+    } catch (error) {
+      this.logger.error('Error getting multiple invoice document URLs', error);
+      throw new RpcException({ status: 500, message: 'Internal server error' });
+    }
   }
 }

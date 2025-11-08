@@ -10,6 +10,8 @@ export const SuppliersSubjects = {
   createInvoice: 'invoices.create',
   getInvoice: 'invoices.getById',
   listInvoices: 'invoices.list',
+  getInvoiceDocumentUrl: 'invoices.getDocumentUrl',
+  getMultipleInvoiceDocumentUrls: 'invoices.getMultipleDocumentUrls',
 
   healthCheck: 'suppliers.health.check'
 } as const;
