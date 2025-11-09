@@ -15,8 +15,7 @@ import { envs, NATS_SERVICE } from 'src/config';
           maxReconnectAttempts: -1,
           reconnectTimeWait: 2000,
           timeout: 5000,
-          name: 'ms-suppliers',
-          jetstream: true
+          name: 'ms-suppliers'
         }
       }
     ])
