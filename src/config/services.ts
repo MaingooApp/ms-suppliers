@@ -26,3 +26,7 @@ export const DocumentsEvents = {
   analyzed: 'documents.analyzed',
   failed: 'documents.analysis.failed'
 } as const;
+
+export const ProductsSubjects = {
+  findOrCreate: 'products.findOrCreate'
+} as const;

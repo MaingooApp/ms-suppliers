@@ -22,6 +22,7 @@ interface CreateInvoicePayload {
     price?: number;
     description?: string;
     tax?: string | null;
+    masterProductId?: string;
   }>;
 }
 
@@ -83,7 +84,8 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
                   unitPrice: line.unitPrice,
                   price: line.price,
                   description: line.description,
-                  tax: line.tax
+                  tax: line.tax,
+                  masterProductId: line.masterProductId
                 }))
               }
             : undefined

@@ -50,6 +50,7 @@ model InvoiceLine {
   id                 String           @id @default(cuid())
   invoiceId          String
   suppliersProductId String?
+  masterProductId    String?          // ID del producto maestro en products-service (para referencia directa)
   description        String?
   quantity           Decimal          @db.Decimal(10, 3)
   unitPrice          Decimal          @db.Decimal(12, 2)
@@ -62,6 +63,7 @@ model InvoiceLine {
 
   @@index([invoiceId])
   @@index([suppliersProductId])
+  @@index([masterProductId])
 }
 
 model SupplierProduct {

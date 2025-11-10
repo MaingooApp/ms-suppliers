@@ -1,8 +1,9 @@
 import { Controller, Logger, Inject } from '@nestjs/common';
 import { EventPattern, Payload, ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 import { InvoicesService } from '../invoices/invoices.service';
-import { DocumentsEvents, SuppliersEvents, NATS_SERVICE } from 'src/config';
+import { DocumentsEvents, SuppliersEvents, ProductsSubjects, NATS_SERVICE } from 'src/config';
 
 interface DocumentAnalyzedPayload {
   documentId: string;
@@ -18,6 +19,7 @@ interface DocumentAnalyzedPayload {
     currency?: string;
     lines?: Array<{
       description?: string;
+      productCode?: string;
       quantity?: number;
       unitPrice?: number;
       total?: number;
@@ -56,6 +58,9 @@ export class DocumentsEventHandler {
         return;
       }
 
+      // Procesar productos de las líneas de la factura
+      const processedLines = await this.processInvoiceLines(extraction.lines || []);
+
       // Crear la factura automáticamente con blobName
       const invoice = await this.invoicesService.createInvoice({
         enterpriseId,
@@ -65,14 +70,7 @@ export class DocumentsEventHandler {
         blobName, // Guardar referencia al archivo en blob storage
         amount: extraction.totalAmount,
         date: extraction.issueDate || new Date().toISOString(),
-        lines: extraction.lines?.map((line) => ({
-          quantity: line.quantity || 1,
-          unitPrice: line.unitPrice || 0,
-          price: line.total,
-          description: line.description,
-          // TODO: Calcular impuesto individual por línea si es necesario
-          tax: null
-        }))
+        lines: processedLines
       });
 
       this.logger.log(`✅ Auto-created invoice ${invoice.id} for document ${payload.documentId}`);
@@ -88,6 +86,67 @@ export class DocumentsEventHandler {
       this.logger.error(`❌ Error processing document ${payload.documentId}:`, error);
       // No lanzar error para no bloquear el evento
     }
+  }
+
+  /**
+   * Procesa las líneas de la factura y busca/crea productos en el catálogo
+   */
+  private async processInvoiceLines(
+    lines: Array<{
+      description?: string;
+      productCode?: string;
+      quantity?: number;
+      unitPrice?: number;
+      total?: number;
+    }>
+  ) {
+    const processedLines: Array<{
+      quantity: number;
+      unitPrice: number;
+      price?: number;
+      description?: string;
+      tax?: string | null;
+      masterProductId?: string;
+    }> = [];
+
+    for (const line of lines) {
+      if (!line.description) {
+        this.logger.warn(`⚠️  Skipping line without description`);
+        continue;
+      }
+
+      let masterProductId: string | undefined;
+
+      try {
+        // Llamar al microservicio de productos para buscar o crear el producto
+        const product = await firstValueFrom(
+          this.client.send(ProductsSubjects.findOrCreate, {
+            name: line.description,
+            eanCode: line.productCode || undefined
+          })
+        );
+
+        masterProductId = product.id;
+        this.logger.log(`✅ Product linked: ${line.description} -> ${masterProductId}`);
+      } catch (error) {
+        this.logger.error(
+          `❌ Error finding/creating product for line "${line.description}":`,
+          error
+        );
+        // Continuar sin masterProductId si falla
+      }
+
+      processedLines.push({
+        quantity: line.quantity || 1,
+        unitPrice: line.unitPrice || 0,
+        price: line.total,
+        description: line.description,
+        tax: null,
+        masterProductId
+      });
+    }
+
+    return processedLines;
   }
 
   @EventPattern(DocumentsEvents.failed)
