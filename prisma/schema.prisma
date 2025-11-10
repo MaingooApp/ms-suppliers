@@ -66,8 +66,8 @@ model InvoiceLine {
 
 model SupplierProduct {
   id               String        @id @default(cuid())
-  productReference String?
-  masterProductId  String?
+  productReference String?       // Referencia/código del proveedor para este producto
+  masterProductId  String?       // ID del producto maestro en products-service (sin FK por microservicios)
   supplierId       String
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
