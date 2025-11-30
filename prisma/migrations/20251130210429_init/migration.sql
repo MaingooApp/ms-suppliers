@@ -19,14 +19,16 @@ CREATE TABLE "Supplier" (
 -- CreateTable
 CREATE TABLE "Invoice" (
     "id" TEXT NOT NULL,
-    "restaurantId" TEXT NOT NULL,
+    "enterpriseId" TEXT NOT NULL,
     "supplierId" TEXT NOT NULL,
     "type" TEXT,
     "invoiceNumber" TEXT,
-    "imageUrl" TEXT,
+    "blobName" TEXT,
     "amount" DECIMAL(12,2) NOT NULL,
     "date" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "hasDeliveryNotes" BOOLEAN NOT NULL DEFAULT false,
+    "documentType" TEXT NOT NULL,
 
     CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
 );
@@ -36,9 +38,11 @@ CREATE TABLE "InvoiceLine" (
     "id" TEXT NOT NULL,
     "invoiceId" TEXT NOT NULL,
     "suppliersProductId" TEXT,
+    "masterProductId" TEXT,
+    "description" TEXT,
     "quantity" DECIMAL(10,3) NOT NULL,
     "unitPrice" DECIMAL(12,2) NOT NULL,
-    "price" INTEGER,
+    "price" DECIMAL(12,2),
     "tax" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -64,7 +68,7 @@ CREATE UNIQUE INDEX "Supplier_cifNif_key" ON "Supplier"("cifNif");
 CREATE INDEX "Supplier_cifNif_idx" ON "Supplier"("cifNif");
 
 -- CreateIndex
-CREATE INDEX "Invoice_restaurantId_idx" ON "Invoice"("restaurantId");
+CREATE INDEX "Invoice_enterpriseId_idx" ON "Invoice"("enterpriseId");
 
 -- CreateIndex
 CREATE INDEX "Invoice_supplierId_idx" ON "Invoice"("supplierId");
@@ -77,6 +81,9 @@ CREATE INDEX "InvoiceLine_invoiceId_idx" ON "InvoiceLine"("invoiceId");
 
 -- CreateIndex
 CREATE INDEX "InvoiceLine_suppliersProductId_idx" ON "InvoiceLine"("suppliersProductId");
+
+-- CreateIndex
+CREATE INDEX "InvoiceLine_masterProductId_idx" ON "InvoiceLine"("masterProductId");
 
 -- CreateIndex
 CREATE INDEX "SupplierProduct_supplierId_idx" ON "SupplierProduct"("supplierId");

@@ -40,6 +40,8 @@ model Invoice {
 
   supplier       Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   invoiceLines   InvoiceLine[]
+  hasDeliveryNotes Boolean @default(false)
+  documentType String
 
   @@index([enterpriseId])
   @@index([supplierId])
