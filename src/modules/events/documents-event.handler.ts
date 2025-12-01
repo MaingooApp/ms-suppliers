@@ -9,6 +9,8 @@ interface DocumentAnalyzedPayload {
   documentId: string;
   enterpriseId: string;
   blobName: string;
+  hasDeliveryNotes: boolean;
+  documentType: string;
   extraction: {
     supplierName?: string;
     supplierTaxId?: string;
@@ -70,7 +72,9 @@ export class DocumentsEventHandler {
         blobName, // Guardar referencia al archivo en blob storage
         amount: extraction.totalAmount,
         date: extraction.issueDate || new Date().toISOString(),
-        lines: processedLines
+        lines: processedLines,
+        hasDeliveryNotes: payload.hasDeliveryNotes,
+        documentType: payload.documentType
       });
 
       this.logger.log(`✅ Auto-created invoice ${invoice.id} for document ${payload.documentId}`);

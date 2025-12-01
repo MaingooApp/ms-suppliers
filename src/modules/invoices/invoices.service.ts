@@ -12,6 +12,8 @@ interface CreateInvoicePayload {
   supplierName?: string;
   supplierCifNif?: string;
   invoiceNumber?: string;
+  hasDeliveryNotes: boolean;
+  documentType: string;
   blobName?: string;
   amount: number;
   date: string;
@@ -74,6 +76,8 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
           supplierId,
           invoiceNumber: payload.invoiceNumber,
           blobName: payload.blobName,
+          hasDeliveryNotes: payload.hasDeliveryNotes,
+          documentType: payload.documentType,
           amount: payload.amount,
           date: payload.date,
           type: payload.type,
