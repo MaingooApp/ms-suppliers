@@ -40,4 +40,15 @@ export class InvoicesController {
       payload.expiresInHours || 48
     );
   }
+
+  @MessagePattern(SuppliersSubjects.checkInvoiceExists)
+  checkInvoiceExists(
+    @Payload() payload: { invoiceNumber: string; documentType: string; enterpriseId: string }
+  ) {
+    return this.invoicesService.checkInvoiceExists(
+      payload.invoiceNumber,
+      payload.documentType,
+      payload.enterpriseId
+    );
+  }
 }

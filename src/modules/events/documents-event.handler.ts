@@ -152,9 +152,4 @@ export class DocumentsEventHandler {
 
     return processedLines;
   }
-
-  @EventPattern(DocumentsEvents.failed)
-  handleDocumentAnalysisFailed(@Payload() payload: any) {
-    this.logger.warn(`⚠️  Document analysis failed: ${payload.documentId} - ${payload.reason}`);
-  }
 }

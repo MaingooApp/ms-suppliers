@@ -211,4 +211,32 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
       throw new RpcException({ status: 500, message: 'Internal server error' });
     }
   }
+
+  /**
+   * Verifica si ya existe una factura con el mismo número y tipo de documento
+   */
+  async checkInvoiceExists(
+    invoiceNumber: string,
+    documentType: string,
+    enterpriseId: string
+  ): Promise<{ exists: boolean; invoiceId?: string }> {
+    try {
+      const existingInvoice = await this.invoice.findFirst({
+        where: {
+          invoiceNumber,
+          documentType,
+          enterpriseId
+        },
+        select: { id: true }
+      });
+
+      return {
+        exists: !!existingInvoice,
+        invoiceId: existingInvoice?.id
+      };
+    } catch (error) {
+      this.logger.error('Error checking invoice existence', error);
+      throw new RpcException({ status: 500, message: 'Internal server error' });
+    }
+  }
 }
