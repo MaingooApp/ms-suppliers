@@ -3,8 +3,7 @@ name: Build and Deploy Suppliers to Azure
 on:
   push:
     branches:
-      - main
-      - master
+      - production
   workflow_dispatch:
 
 env:
