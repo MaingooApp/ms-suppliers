@@ -12,6 +12,7 @@ export const SuppliersSubjects = {
   listInvoices: 'invoices.list',
   getInvoiceDocumentUrl: 'invoices.getDocumentUrl',
   getMultipleInvoiceDocumentUrls: 'invoices.getMultipleDocumentUrls',
+  checkInvoiceExists: 'invoices.checkExists',
 
   healthCheck: 'suppliers.health.check'
 } as const;
@@ -23,8 +24,7 @@ export const SuppliersEvents = {
 } as const;
 
 export const DocumentsEvents = {
-  analyzed: 'documents.analyzed',
-  failed: 'documents.analysis.failed'
+  analyzed: 'documents.analyzed'
 } as const;
 
 export const ProductsSubjects = {
