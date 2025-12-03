@@ -10,6 +10,7 @@ export const SuppliersSubjects = {
   createInvoice: 'invoices.create',
   getInvoice: 'invoices.getById',
   listInvoices: 'invoices.list',
+  deleteInvoice: 'invoices.delete',
   getInvoiceDocumentUrl: 'invoices.getDocumentUrl',
   getMultipleInvoiceDocumentUrls: 'invoices.getMultipleDocumentUrls',
   checkInvoiceExists: 'invoices.checkExists',
@@ -28,5 +29,6 @@ export const DocumentsEvents = {
 } as const;
 
 export const ProductsSubjects = {
-  findOrCreate: 'products.findOrCreate'
+  findOrCreate: 'products.findOrCreate',
+  updateStock: 'products.updateStock'
 } as const;

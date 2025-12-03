@@ -24,6 +24,11 @@ export class SuppliersController {
     return this.suppliersService.listSuppliers();
   }
 
+  @MessagePattern(SuppliersSubjects.deleteSupplier)
+  deleteSupplier(@Payload() payload: { id: string }) {
+    return this.suppliersService.deleteSupplier(payload.id);
+  }
+
   @MessagePattern(SuppliersSubjects.healthCheck)
   health() {
     return this.suppliersService.health();

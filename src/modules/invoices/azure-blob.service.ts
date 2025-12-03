@@ -109,4 +109,26 @@ export class AzureBlobService {
       return false;
     }
   }
+
+  /**
+   * Elimina un documento del blob storage
+   */
+  async deleteDocument(blobName: string): Promise<boolean> {
+    try {
+      const blockBlobClient = this.containerClient.getBlockBlobClient(blobName);
+      const exists = await blockBlobClient.exists();
+
+      if (!exists) {
+        this.logger.warn(`Blob ${blobName} does not exist, skipping deletion`);
+        return false;
+      }
+
+      await blockBlobClient.delete();
+      this.logger.log(`🗑️  Blob deleted: ${blobName}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to delete blob: ${blobName}`, error);
+      throw error;
+    }
+  }
 }

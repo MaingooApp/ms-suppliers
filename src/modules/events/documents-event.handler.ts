@@ -86,6 +86,13 @@ export class DocumentsEventHandler {
 
       this.logger.log(`✅ Auto-created invoice ${invoice.id} for document ${payload.documentId}`);
 
+      // Actualizar inventario si corresponde según las reglas de negocio
+      await this.updateInventoryIfNeeded(
+        payload.documentType,
+        payload.hasDeliveryNotes,
+        processedLines
+      );
+
       // Emitir evento con documentId para que analyzer lo vincule
       this.client.emit(SuppliersEvents.invoiceProcessed, {
         documentId: payload.documentId,
@@ -150,5 +157,55 @@ export class DocumentsEventHandler {
     }
 
     return processedLines;
+  }
+
+  /**
+   * Actualiza el inventario (stock) de productos si corresponde según las reglas:
+   * - delivery_note: SÍ afecta el inventario (suma al stock)
+   * - invoice + hasDeliveryNotes=false: SÍ afecta el inventario (suma al stock)
+   * - invoice + hasDeliveryNotes=true: NO afecta (ya se sumó con el delivery_note)
+   */
+  private async updateInventoryIfNeeded(
+    documentType: string,
+    hasDeliveryNotes: boolean,
+    lines: Array<{ quantity: number; masterProductId?: string }>
+  ): Promise<void> {
+    // Determinar si debe afectar el inventario
+    const shouldAffectInventory =
+      documentType === 'delivery_note' || (documentType === 'invoice' && !hasDeliveryNotes);
+
+    if (!shouldAffectInventory) {
+      return;
+    }
+
+    // Preparar actualizaciones de stock solo para productos que tienen masterProductId
+    const stockUpdates: { productId: string; quantity: number }[] = [];
+
+    for (const line of lines) {
+      if (line.masterProductId) {
+        stockUpdates.push({
+          productId: line.masterProductId,
+          quantity: line.quantity
+        });
+      }
+    }
+
+    // Actualizar el stock de todos los productos de una vez
+    if (stockUpdates.length > 0) {
+      try {
+        const result = await firstValueFrom(
+          this.client.send<{ success: boolean; results: Array<{ success: boolean }> }>(
+            ProductsSubjects.updateStock,
+            stockUpdates
+          )
+        );
+
+        this.logger.log(
+          `📦 Inventory updated: ${result.results.filter((r) => r.success).length}/${stockUpdates.length} products`
+        );
+      } catch (error) {
+        this.logger.error('❌ Failed to update inventory:', error);
+      }
+    }
   }
 }

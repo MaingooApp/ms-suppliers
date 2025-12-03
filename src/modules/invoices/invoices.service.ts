@@ -3,8 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import { RpcException, ClientProxy } from '@nestjs/microservices';
 
 import { SuppliersService } from '../suppliers/suppliers.service';
-import { NATS_SERVICE, SuppliersEvents } from 'src/config';
+import { NATS_SERVICE, SuppliersEvents, ProductsSubjects } from 'src/config';
 import { AzureBlobService } from './azure-blob.service';
+import { firstValueFrom } from 'rxjs';
 
 interface CreateInvoicePayload {
   enterpriseId: string;
@@ -208,6 +209,84 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
         }));
     } catch (error) {
       this.logger.error('Error getting multiple invoice document URLs', error);
+      throw new RpcException({ status: 500, message: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Elimina una factura por su ID
+   * Revierte los cambios de inventario si la factura afectó el stock
+   */
+  async deleteInvoice(id: string) {
+    try {
+      // Obtener la factura con sus líneas para verificar si hay que revertir inventario
+      const invoice = await this.invoice.findUnique({
+        where: { id },
+        include: {
+          invoiceLines: {
+            select: {
+              quantity: true,
+              masterProductId: true
+            }
+          }
+        }
+      });
+
+      if (!invoice) {
+        throw new RpcException({ status: 404, message: 'Invoice not found' });
+      }
+
+      // Determinar si esta factura afectó el inventario (misma lógica que updateInventoryIfNeeded)
+      const shouldRevertInventory =
+        invoice.documentType === 'delivery_note' ||
+        (invoice.documentType === 'invoice' && !invoice.hasDeliveryNotes);
+
+      // Revertir inventario si es necesario
+      if (shouldRevertInventory && invoice.invoiceLines.length > 0) {
+        const stockUpdates = invoice.invoiceLines
+          .filter((line) => line.masterProductId)
+          .map((line) => ({
+            productId: line.masterProductId!,
+            quantity: -line.quantity // Negativo para decrementar
+          }));
+
+        if (stockUpdates.length > 0) {
+          try {
+            const result = await firstValueFrom(
+              this.client.send(ProductsSubjects.updateStock, stockUpdates)
+            );
+            this.logger.log(
+              `📦 Inventory reverted for invoice ${id}: ${stockUpdates.length} products updated`
+            );
+          } catch (error) {
+            this.logger.warn(`⚠️  Failed to revert inventory for invoice ${id}:`, error);
+            // Continuar con la eliminación aunque falle la reversión del inventario
+          }
+        }
+      }
+
+      // Eliminar el documento del blob storage si existe
+      if (invoice.blobName) {
+        try {
+          await this.azureBlobService.deleteDocument(invoice.blobName);
+          this.logger.log(`🗑️  Deleted blob: ${invoice.blobName}`);
+        } catch (error) {
+          this.logger.warn(`⚠️  Failed to delete blob ${invoice.blobName}:`, error);
+          // Continuar con la eliminación de la factura aunque falle el blob
+        }
+      }
+
+      // Eliminar la factura (las líneas se eliminan en cascada)
+      await this.invoice.delete({
+        where: { id }
+      });
+
+      this.logger.log(`🗑️  Invoice deleted: ${id}`);
+
+      return { success: true, message: 'Invoice deleted successfully' };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      this.logger.error(`Error deleting invoice ${id}`, error);
       throw new RpcException({ status: 500, message: 'Internal server error' });
     }
   }
