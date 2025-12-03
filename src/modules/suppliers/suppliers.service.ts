@@ -104,6 +104,41 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
     });
   }
 
+  async deleteSupplier(id: string) {
+    try {
+      const supplier = await this.supplier.findUnique({
+        where: { id },
+        include: {
+          invoices: { select: { id: true } }
+        }
+      });
+
+      if (!supplier) {
+        throw new RpcException({ status: 404, message: 'Supplier not found' });
+      }
+
+      // Verificar si tiene facturas asociadas
+      if (supplier.invoices.length > 0) {
+        throw new RpcException({
+          status: 400,
+          message: `No se puede eliminar el proveedor con ${supplier.invoices.length} facturas asociadas. Elimine las facturas primero.`
+        });
+      }
+
+      await this.supplier.delete({
+        where: { id }
+      });
+
+      this.logger.log(`🗑️  Supplier deleted: ${supplier.name} (${id})`);
+
+      return { success: true, message: 'Proveedor eliminado correctamente' };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      this.logger.error(`Error deleting supplier ${id}`, error);
+      throw new RpcException({ status: 500, message: 'Internal server error' });
+    }
+  }
+
   async health() {
     return { status: 'ok' };
   }

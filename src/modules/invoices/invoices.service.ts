@@ -213,6 +213,46 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
   }
 
   /**
+   * Elimina una factura por su ID
+   */
+  async deleteInvoice(id: string) {
+    try {
+      const invoice = await this.invoice.findUnique({
+        where: { id },
+        select: { id: true, blobName: true }
+      });
+
+      if (!invoice) {
+        throw new RpcException({ status: 404, message: 'Invoice not found' });
+      }
+
+      // Eliminar el documento del blob storage si existe
+      if (invoice.blobName) {
+        try {
+          await this.azureBlobService.deleteDocument(invoice.blobName);
+          this.logger.log(`🗑️  Deleted blob: ${invoice.blobName}`);
+        } catch (error) {
+          this.logger.warn(`⚠️  Failed to delete blob ${invoice.blobName}:`, error);
+          // Continuar con la eliminación de la factura aunque falle el blob
+        }
+      }
+
+      // Eliminar la factura (las líneas se eliminan en cascada)
+      await this.invoice.delete({
+        where: { id }
+      });
+
+      this.logger.log(`🗑️  Invoice deleted: ${id}`);
+
+      return { success: true, message: 'Invoice deleted successfully' };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      this.logger.error(`Error deleting invoice ${id}`, error);
+      throw new RpcException({ status: 500, message: 'Internal server error' });
+    }
+  }
+
+  /**
    * Verifica si ya existe una factura con el mismo número y tipo de documento
    */
   async checkInvoiceExists(

@@ -41,6 +41,11 @@ export class InvoicesController {
     );
   }
 
+  @MessagePattern(SuppliersSubjects.deleteInvoice)
+  deleteInvoice(@Payload() payload: { id: string }) {
+    return this.invoicesService.deleteInvoice(payload.id);
+  }
+
   @MessagePattern(SuppliersSubjects.checkInvoiceExists)
   checkInvoiceExists(
     @Payload() payload: { invoiceNumber: string; documentType: string; enterpriseId: string }
