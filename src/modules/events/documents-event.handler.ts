@@ -5,6 +5,19 @@ import { firstValueFrom } from 'rxjs';
 import { InvoicesService } from '../invoices/invoices.service';
 import { DocumentsEvents, SuppliersEvents, ProductsSubjects, NATS_SERVICE } from 'src/config';
 
+interface ExtractionLine {
+  ProductCode?: string;
+  ProductDescription?: string;
+  ProductUnit?: string;
+  UnitPrice?: number;
+  UnitCount?: string;
+  LinePrice?: number;
+  Quantity?: number;
+  LineAmount?: number;
+  TaxIndicator?: string;
+  DiscountCode?: string;
+}
+
 interface DocumentAnalyzedPayload {
   documentId: string;
   enterpriseId: string;
@@ -19,13 +32,7 @@ interface DocumentAnalyzedPayload {
     totalAmount?: number;
     taxAmount?: number;
     currency?: string;
-    lines?: Array<{
-      description?: string;
-      productCode?: string;
-      quantity?: number;
-      unitPrice?: number;
-      total?: number;
-    }>;
+    lines?: ExtractionLine[];
   };
 }
 
@@ -95,15 +102,7 @@ export class DocumentsEventHandler {
   /**
    * Procesa las líneas de la factura y busca/crea productos en el catálogo
    */
-  private async processInvoiceLines(
-    lines: Array<{
-      description?: string;
-      productCode?: string;
-      quantity?: number;
-      unitPrice?: number;
-      total?: number;
-    }>
-  ) {
+  private async processInvoiceLines(lines: ExtractionLine[]) {
     const processedLines: Array<{
       quantity: number;
       unitPrice: number;
@@ -114,7 +113,7 @@ export class DocumentsEventHandler {
     }> = [];
 
     for (const line of lines) {
-      if (!line.description) {
+      if (!line.ProductDescription) {
         this.logger.warn(`⚠️  Skipping line without description`);
         continue;
       }
@@ -125,27 +124,27 @@ export class DocumentsEventHandler {
         // Llamar al microservicio de productos para buscar o crear el producto
         const product = await firstValueFrom(
           this.client.send(ProductsSubjects.findOrCreate, {
-            name: line.description,
-            eanCode: line.productCode || undefined
+            name: line.ProductDescription,
+            eanCode: line.ProductCode || undefined
           })
         );
 
         masterProductId = product.id;
-        this.logger.log(`✅ Product linked: ${line.description} -> ${masterProductId}`);
+        this.logger.log(`✅ Product linked: ${line.ProductDescription} -> ${masterProductId}`);
       } catch (error) {
         this.logger.error(
-          `❌ Error finding/creating product for line "${line.description}":`,
+          `❌ Error finding/creating product for line "${line.ProductDescription}":`,
           error
         );
         // Continuar sin masterProductId si falla
       }
 
       processedLines.push({
-        quantity: line.quantity || 1,
-        unitPrice: line.unitPrice || 0,
-        price: line.total,
-        description: line.description,
-        tax: null,
+        quantity: line.Quantity || 1,
+        unitPrice: line.UnitPrice || 0,
+        price: line.LineAmount,
+        description: line.ProductDescription,
+        tax: line.TaxIndicator || null,
         masterProductId
       });
     }
