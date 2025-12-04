@@ -68,7 +68,7 @@ export class DocumentsEventHandler {
       }
 
       // Procesar productos de las líneas de la factura
-      const processedLines = await this.processInvoiceLines(extraction.lines || []);
+      const processedLines = await this.processInvoiceLines(extraction.lines || [], enterpriseId);
 
       // Crear la factura automáticamente con blobName
       const invoice = await this.invoicesService.createInvoice({
@@ -109,7 +109,7 @@ export class DocumentsEventHandler {
   /**
    * Procesa las líneas de la factura y busca/crea productos en el catálogo
    */
-  private async processInvoiceLines(lines: ExtractionLine[]) {
+  private async processInvoiceLines(lines: ExtractionLine[], enterpriseId: string) {
     const processedLines: Array<{
       quantity: number;
       unitPrice: number;
@@ -132,7 +132,8 @@ export class DocumentsEventHandler {
         const product = await firstValueFrom(
           this.client.send(ProductsSubjects.findOrCreate, {
             name: line.ProductDescription,
-            eanCode: line.ProductCode || undefined
+            eanCode: line.ProductCode || undefined,
+            enterpriseId
           })
         );
 
