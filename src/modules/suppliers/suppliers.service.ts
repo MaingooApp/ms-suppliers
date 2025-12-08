@@ -20,14 +20,17 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
 
   async createSupplier(payload: CreateSupplierDto) {
     try {
-      const existing = await this.supplier.findUnique({
-        where: { cifNif: payload.cifNif }
+      const existing = await this.supplier.findFirst({
+        where: {
+          cifNif: payload.cifNif,
+          enterpriseId: payload.enterpriseId
+        }
       });
 
       if (existing) {
         throw new RpcException({
           status: 400,
-          message: `Supplier with CIF/NIF ${payload.cifNif} already exists`
+          message: `Supplier with CIF/NIF ${payload.cifNif} already exists for this enterprise`
         });
       }
 
@@ -44,23 +47,27 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
     }
   }
 
-  async findOrCreateSupplier(name: string, cifNif: string) {
+  async findOrCreateSupplier(name: string, cifNif: string, enterpriseId: string) {
     try {
       let supplier;
 
-      // Buscar por CIF
-      supplier = await this.supplier.findUnique({
-        where: { cifNif }
+      // Buscar por CIF y enterpriseId
+      supplier = await this.supplier.findFirst({
+        where: {
+          cifNif,
+          enterpriseId
+        }
       });
 
-      // Si no se encontró por CIF, buscar por nombre (case insensitive)
+      // Si no se encontró por CIF, buscar por nombre (case insensitive) y enterpriseId
       if (!supplier) {
         supplier = await this.supplier.findFirst({
           where: {
             name: {
               equals: name,
               mode: 'insensitive'
-            }
+            },
+            enterpriseId
           }
         });
       }
@@ -68,9 +75,11 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
       // Si no existe, crear nuevo proveedor
       if (!supplier) {
         supplier = await this.supplier.create({
-          data: { name, cifNif }
+          data: { name, cifNif, enterpriseId }
         });
-        this.logger.log(`✅ Auto-created supplier: ${name} (${cifNif})`);
+        this.logger.log(
+          `✅ Auto-created supplier: ${name} (${cifNif}) for enterprise ${enterpriseId}`
+        );
       } else {
         this.logger.log(`📌 Found existing supplier: ${name}`);
       }
@@ -98,8 +107,10 @@ export class SuppliersService extends PrismaClient implements OnModuleInit, OnMo
     return supplier;
   }
 
-  async listSuppliers() {
+  async listSuppliers(enterpriseId?: string) {
+    const where = enterpriseId ? { enterpriseId } : {};
     return this.supplier.findMany({
+      where,
       orderBy: { createdAt: 'desc' }
     });
   }
