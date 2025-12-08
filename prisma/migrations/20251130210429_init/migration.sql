@@ -1,6 +1,7 @@
 -- CreateTable
 CREATE TABLE "Supplier" (
     "id" TEXT NOT NULL,
+    "enterpriseId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "cifNif" TEXT NOT NULL,
     "address" TEXT,
@@ -62,10 +63,10 @@ CREATE TABLE "SupplierProduct" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Supplier_cifNif_key" ON "Supplier"("cifNif");
+CREATE UNIQUE INDEX "Supplier_cifNif_enterpriseId_key" ON "Supplier"("cifNif", "enterpriseId");
 
 -- CreateIndex
-CREATE INDEX "Supplier_cifNif_idx" ON "Supplier"("cifNif");
+CREATE INDEX "Supplier_enterpriseId_idx" ON "Supplier"("enterpriseId");
 
 -- CreateIndex
 CREATE INDEX "Invoice_enterpriseId_idx" ON "Invoice"("enterpriseId");
