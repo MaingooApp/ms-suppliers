@@ -59,7 +59,8 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
       if (!supplierId && payload.supplierName && payload.supplierCifNif) {
         const supplier = await this.suppliersService.findOrCreateSupplier(
           payload.supplierName,
-          payload.supplierCifNif
+          payload.supplierCifNif,
+          payload.enterpriseId
         );
         supplierId = supplier.id;
       }

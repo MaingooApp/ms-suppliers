@@ -20,8 +20,8 @@ export class SuppliersController {
   }
 
   @MessagePattern(SuppliersSubjects.listSuppliers)
-  listSuppliers() {
-    return this.suppliersService.listSuppliers();
+  listSuppliers(@Payload() payload?: { enterpriseId?: string }) {
+    return this.suppliersService.listSuppliers(payload?.enterpriseId);
   }
 
   @MessagePattern(SuppliersSubjects.deleteSupplier)

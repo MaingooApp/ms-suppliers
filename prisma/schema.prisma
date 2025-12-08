@@ -9,8 +9,9 @@ datasource db {
 
 model Supplier {
   id                         String            @id @default(cuid())
+  enterpriseId               String
   name                       String
-  cifNif                     String            @unique
+  cifNif                     String
   address                    String?
   phoneNumber                String?
   commercialName             String?
@@ -24,7 +25,8 @@ model Supplier {
   invoices                   Invoice[]
   supplierProducts           SupplierProduct[]
 
-  @@index([cifNif])
+  @@unique([cifNif, enterpriseId])
+  @@index([enterpriseId])
 }
 
 model Invoice {

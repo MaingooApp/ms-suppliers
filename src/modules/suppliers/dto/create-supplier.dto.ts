@@ -2,6 +2,9 @@ import { IsString, IsOptional, IsDecimal } from 'class-validator';
 
 export class CreateSupplierDto {
   @IsString()
+  enterpriseId!: string;
+
+  @IsString()
   name!: string;
 
   @IsString()
