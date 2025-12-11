@@ -26,7 +26,7 @@ CREATE TABLE "Invoice" (
     "invoiceNumber" TEXT,
     "blobName" TEXT,
     "amount" DECIMAL(12,2) NOT NULL,
-    "date" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "hasDeliveryNotes" BOOLEAN NOT NULL DEFAULT false,
     "documentType" TEXT NOT NULL,
