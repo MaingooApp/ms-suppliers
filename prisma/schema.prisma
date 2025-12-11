@@ -37,7 +37,7 @@ model Invoice {
   invoiceNumber  String?
   blobName       String?       // Referencia al archivo en Azure Blob Storage
   amount         Decimal       @db.Decimal(12, 2)
-  date           String
+  date           DateTime
   createdAt      DateTime      @default(now())
 
   supplier       Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
