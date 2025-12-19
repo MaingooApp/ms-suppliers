@@ -55,11 +55,17 @@ model InvoiceLine {
   invoiceId          String
   suppliersProductId String?
   masterProductId    String?          // ID del producto maestro en products-service (para referencia directa)
+  productCode        String?          // Código del producto del proveedor
   description        String?
+  productUnit        String?          // Unidad de medida (kg, ud, etc.)
+  unitCount          String?          // Cantidad por unidad
   quantity           Decimal          @db.Decimal(10, 3)
   unitPrice          Decimal          @db.Decimal(12, 2)
-  price              Decimal?         @db.Decimal(12, 2)
+  linePrice          Decimal?         @db.Decimal(12, 2)  // Precio de línea antes de impuestos
+  price              Decimal?         @db.Decimal(12, 2)  // Precio total de línea (LineAmount)
   tax                String?
+  discountCode       String?          // Código de descuento aplicado
+  additionalReference String?         // Referencia adicional
   createdAt          DateTime         @default(now())
 
   invoice            Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)

@@ -20,11 +20,17 @@ interface CreateInvoicePayload {
   date: string;
   type?: string;
   lines?: Array<{
+    productCode?: string;
+    description?: string;
+    productUnit?: string;
+    unitCount?: string;
     quantity: number;
     unitPrice: number;
+    linePrice?: number;
     price?: number;
-    description?: string;
     tax?: string | null;
+    discountCode?: string;
+    additionalReference?: string;
     masterProductId?: string;
   }>;
 }
@@ -86,11 +92,17 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
           invoiceLines: payload.lines
             ? {
                 create: payload.lines.map((line) => ({
+                  productCode: line.productCode,
+                  description: line.description,
+                  productUnit: line.productUnit,
+                  unitCount: line.unitCount,
                   quantity: line.quantity,
                   unitPrice: line.unitPrice,
+                  linePrice: line.linePrice,
                   price: line.price,
-                  description: line.description,
                   tax: line.tax,
+                  discountCode: line.discountCode,
+                  additionalReference: line.additionalReference,
                   masterProductId: line.masterProductId
                 }))
               }
