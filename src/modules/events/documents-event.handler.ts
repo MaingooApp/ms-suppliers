@@ -16,6 +16,7 @@ interface ExtractionLine {
   LineAmount?: number;
   TaxIndicator?: string;
   DiscountCode?: string;
+  AdditionalReference?: string;
 }
 
 interface DocumentAnalyzedPayload {
@@ -111,11 +112,17 @@ export class DocumentsEventHandler {
    */
   private async processInvoiceLines(lines: ExtractionLine[], enterpriseId: string) {
     const processedLines: Array<{
+      productCode?: string;
+      description?: string;
+      productUnit?: string;
+      unitCount?: string;
       quantity: number;
       unitPrice: number;
+      linePrice?: number;
       price?: number;
-      description?: string;
       tax?: string | null;
+      discountCode?: string;
+      additionalReference?: string;
       masterProductId?: string;
     }> = [];
 
@@ -133,7 +140,11 @@ export class DocumentsEventHandler {
           this.client.send(ProductsSubjects.findOrCreate, {
             name: line.ProductDescription,
             eanCode: line.ProductCode || undefined,
-            enterpriseId
+            enterpriseId,
+            unit: line.ProductUnit || undefined,
+            unitCount: line.UnitCount || undefined,
+            lastUnitPrice: line.UnitPrice || undefined,
+            additionalReference: line.AdditionalReference || undefined,
           })
         );
 
@@ -148,11 +159,17 @@ export class DocumentsEventHandler {
       }
 
       processedLines.push({
+        productCode: line.ProductCode,
+        description: line.ProductDescription,
+        productUnit: line.ProductUnit,
+        unitCount: line.UnitCount,
         quantity: line.Quantity || 1,
         unitPrice: line.UnitPrice || 0,
+        linePrice: line.LinePrice,
         price: line.LineAmount,
-        description: line.ProductDescription,
         tax: line.TaxIndicator || null,
+        discountCode: line.DiscountCode,
+        additionalReference: line.AdditionalReference,
         masterProductId
       });
     }
