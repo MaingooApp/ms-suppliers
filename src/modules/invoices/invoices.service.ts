@@ -149,9 +149,27 @@ export class InvoicesService extends PrismaClient implements OnModuleInit, OnMod
     return invoice;
   }
 
-  async listInvoices(enterpriseId?: string) {
+  async listInvoices(filters?: { enterpriseId?: string; supplierId?: string; productId?: string }) {
+    const where: any = {};
+
+    if (filters?.enterpriseId) {
+      where.enterpriseId = filters.enterpriseId;
+    }
+
+    if (filters?.supplierId) {
+      where.supplierId = filters.supplierId;
+    }
+
+    if (filters?.productId) {
+      where.invoiceLines = {
+        some: {
+          masterProductId: filters.productId
+        }
+      };
+    }
+
     return this.invoice.findMany({
-      where: enterpriseId ? { enterpriseId } : undefined,
+      where: Object.keys(where).length > 0 ? where : undefined,
       include: {
         supplier: true
       },

@@ -19,8 +19,8 @@ export class InvoicesController {
   }
 
   @MessagePattern(SuppliersSubjects.listInvoices)
-  listInvoices(@Payload() payload?: { enterpriseId?: string }) {
-    return this.invoicesService.listInvoices(payload?.enterpriseId);
+  listInvoices(@Payload() payload?: { enterpriseId?: string; supplierId?: string; productId?: string }) {
+    return this.invoicesService.listInvoices(payload);
   }
 
   @MessagePattern(SuppliersSubjects.getInvoiceDocumentUrl)
